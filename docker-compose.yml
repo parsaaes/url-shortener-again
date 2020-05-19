@@ -1,0 +1,12 @@
+version: "3"
+
+services:
+  postgres:
+    image: "postgres:12.0"
+    container_name: "url_postgres"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=url
+    ports:
+      - "54320:5432"
