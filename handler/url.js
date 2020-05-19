@@ -28,6 +28,8 @@ export default class URLHandler {
       await this.urlRepo.save(tiny, url);
     } catch (err) {
       console.error(err);
+      ctx.response.status = 500;
+      return;
     }
 
     ctx.response.status = 201;
@@ -45,7 +47,7 @@ export default class URLHandler {
       return;
     }
 
-    if (result.rows.length < 1) {
+    if (!result || !result.rows || result.rows.length < 1) {
       ctx.response.status = 404;
       return;
     }
