@@ -1,26 +1,55 @@
-import ShortUniqueId from 'https://cdn.jsdelivr.net/npm/short-unique-id@latest/short_uuid/mod.ts';
+import ShortUniqueId from "https://cdn.jsdelivr.net/npm/short-unique-id@latest/short_uuid/mod.ts";
+import * as Url from "https://deno.land/x/is_url/mod.ts";
 
-export default class URL {
-    constructor(urlRepo) {
-        this.urlRepo = urlRepo;
-        this.uid = new ShortUniqueId();;
+const uid = new ShortUniqueId();
+
+export default class URLHandler {
+  constructor(urlRepo) {
+    this.urlRepo = urlRepo;
+  }
+
+  shorten = async (ctx) => {
+    let url = ctx.params.url;
+    let base = ctx.request.url.origin + "/";
+
+    if (!url) {
+      ctx.response.status = 400;
+      ctx.response.body = { msg: "No URL is specified" };
+      return;
     }
 
-    async shorten({
-        params,
-        response
-      }) {
-        let url = params.url;
-
-        if (!url) {
-            response.status = 400;
-            response.body = { msg: "No URL is specified" };
-            return;
-        }
-
-        let tiny = this.uid();
-        await this.urlRepo(tiny, url);
-
-        response.body = {url: tiny};
+    if (!Url.isAbsoluteUrl(url)) {
+      url = "http://" + url;
     }
+
+    let tiny = uid();
+
+    try {
+      await this.urlRepo.save(tiny, url);
+    } catch (err) {
+      console.error(err);
+    }
+
+    ctx.response.status = 201;
+    ctx.response.body = { url: base + tiny };
+  };
+
+  redirect = async (ctx) => {
+    let tiny = ctx.params.tiny;
+    let result;
+    try {
+      result = await this.urlRepo.get(tiny);
+    } catch (err) {
+      console.error(err);
+      ctx.response.status = 500;
+      return;
+    }
+
+    if (result.rows.length < 1) {
+      ctx.response.status = 404;
+      return;
+    }
+
+    ctx.response.redirect(result.rows[0]);
+  };
 }
